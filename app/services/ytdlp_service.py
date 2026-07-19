@@ -22,9 +22,9 @@ os.makedirs(DATA_DIR, exist_ok=True)
 COOKIES_FILE = os.environ.get("COOKIES_FILE", "") or os.path.join(DATA_DIR, "cookies.txt")
 FFMPEG_LOCATION = os.environ.get("FFMPEG_LOCATION", "")
 
-INVIDIOUS_INSTANCE = os.environ.get("INVIDIOUS_INSTANCE", "https://invidious.snopyta.org")
+JS_RUNTIME = os.environ.get("JS_RUNTIME", "node")
 
-_INVIDIOUS_EXTRACTOR_ARGS = f"youtube:invidious={INVIDIOUS_INSTANCE}"
+_EXTRACTOR_ARGS = "youtube:player_client=android,youtube:skip=webpage"
 
 
 def init_cookies():
@@ -70,7 +70,7 @@ def _ytdlp_cmd(extra: list[str] | None = None) -> list[str]:
     cmd = ["yt-dlp", "--socket-timeout", "30", "--retries", "3"]
     if os.path.exists(COOKIES_FILE):
         cmd += ["--cookies", COOKIES_FILE]
-    cmd += ["--extractor-args", _INVIDIOUS_EXTRACTOR_ARGS]
+    cmd += ["--extractor-args", _EXTRACTOR_ARGS, "--js-runtime", JS_RUNTIME]
     if extra:
         cmd += extra
     return cmd
@@ -177,7 +177,8 @@ def download_video(
         "restrictfilenames": prefs.get("restrict_filenames", False),
         "socket_timeout": 15,
         "retries": 3,
-        "extractor_args": {"youtube": {"invidious": [INVIDIOUS_INSTANCE]}},
+        "extractor_args": {"youtube": {"player_client": ["android"], "skip": ["webpage"]}},
+        "js_runtime": JS_RUNTIME,
     }
     _apply_cookies(opts)
 
