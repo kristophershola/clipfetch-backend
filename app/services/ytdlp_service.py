@@ -24,7 +24,7 @@ FFMPEG_LOCATION = os.environ.get("FFMPEG_LOCATION", "")
 
 JS_RUNTIME = os.environ.get("JS_RUNTIME", "node")
 
-_EXTRACTOR_ARGS = "youtube:player_client=android,youtube:skip=webpage"
+_EXTRACTOR_ARGS = "youtube:player_client=android;player_skip=webpage"
 
 
 def init_cookies():
@@ -44,7 +44,8 @@ def init_cookies():
         written = "\n".join(clean)
         logger.info("Injected cookies from COOKIES_CONTENT (%d raw -> %d clean bytes)", len(content), len(written))
     elif os.path.exists(COOKIES_FILE):
-        logger.info("Cookies file already exists at %s", COOKIES_FILE)
+        os.remove(COOKIES_FILE)
+        logger.info("Removed stale cookies file")
 
 
 def _apply_cookies(opts: dict) -> dict:
@@ -177,7 +178,7 @@ def download_video(
         "restrictfilenames": prefs.get("restrict_filenames", False),
         "socket_timeout": 15,
         "retries": 3,
-        "extractor_args": {"youtube": {"player_client": ["android"], "skip": ["webpage"]}},
+        "extractor_args": {"youtube": {"player_client": ["android"], "player_skip": ["webpage"]}},
         "js_runtime": JS_RUNTIME,
     }
     _apply_cookies(opts)
