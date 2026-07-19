@@ -154,12 +154,14 @@
         <li class="flex items-start gap-2"><span class="bg-blue-100 text-blue-700 font-bold text-xs rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">2</span> Click the button below to install the script</li>
         <li class="flex items-start gap-2"><span class="bg-blue-100 text-blue-700 font-bold text-xs rounded-full w-5 h-5 flex items-center justify-center shrink-0 mt-0.5">3</span> Visit youtube.com — cookies sync automatically</li>
       </ol>
-      <a href="/clipfetch-cookies.user.js"
+      <a href="https://raw.githubusercontent.com/kristophershola/clipfetch-backend/master/static/clipfetch-cookies.user.js"
          class="inline-flex items-center gap-2 mt-6 bg-amber-600 hover:bg-amber-700 text-white font-semibold px-6 py-3 rounded-xl transition shadow-sm text-sm">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
         Install Userscript
       </a>
       <p class="text-xs text-gray-400 mt-3">You only need to do this once. Script auto-updates.</p>
+      <button onclick="copyInstallUrl()" class="text-xs text-blue-600 hover:underline mt-1">Copy install URL for manual setup</button>
+      <p id="copy-msg" class="text-xs text-green-600 hidden mt-1"></p>
     </div>
   </section>
 
@@ -217,6 +219,14 @@
       s.textContent = 'Saved (' + d.size + ' bytes)';
       s.className = 'text-xs text-green-600 mt-2';
       s.classList.remove('hidden');
+    }
+    function copyInstallUrl() {
+      const url = 'https://raw.githubusercontent.com/kristophershola/clipfetch-backend/master/static/clipfetch-cookies.user.js';
+      navigator.clipboard.writeText(url).then(() => {
+        const msg = document.getElementById('copy-msg');
+        msg.textContent = 'URL copied! Open Tampermonkey → Dashboard → Utilities → Install from URL';
+        msg.classList.remove('hidden');
+      });
     }
   </script>
 

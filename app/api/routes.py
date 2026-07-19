@@ -5,8 +5,10 @@ import logging
 
 import os
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
 from app.models.database import (
@@ -224,6 +226,16 @@ def update_cookies(body: dict):
     content = body.get("cookies", "")
     path = save_cookies(content)
     return {"status": "saved", "path": path, "size": len(content)}
+
+
+_USERS_JS_PATH = Path(__file__).parent.parent.parent / "static" / "clipfetch-cookies.user.js"
+
+@router.get("/clipfetch-cookies.user.js")
+def serve_userscript():
+    if not _USERS_JS_PATH.exists():
+        raise HTTPException(status_code=404)
+    content = _USERS_JS_PATH.read_text(encoding="utf-8")
+    return Response(content=content, media_type="text/javascript")
 
 
 @router.websocket("/ws/progress/{task_id}")
