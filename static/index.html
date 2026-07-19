@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClipFetch — Video Downloader</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * { font-family: 'Inter', sans-serif; }
+    body { background: #f8f9fb; }
+
+    @keyframes pulse-bar {
+      0%, 100% { transform: scaleY(0.4); }
+      50% { transform: scaleY(1); }
+    }
+    @keyframes progress-glow {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    @keyframes spin-slow {
+      to { transform: rotate(360deg); }
+    }
+    @keyframes fade-in-up {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in { animation: fade-in-up 0.5s ease-out forwards; }
+    .animate-fade-in-delay { animation: fade-in-up 0.5s ease-out 0.15s forwards; opacity: 0; }
+    .bar-1 { animation: pulse-bar 0.8s ease-in-out infinite; }
+    .bar-2 { animation: pulse-bar 0.8s ease-in-out 0.15s infinite; }
+    .bar-3 { animation: pulse-bar 0.8s ease-in-out 0.3s infinite; }
+    .bar-4 { animation: pulse-bar 0.8s ease-in-out 0.45s infinite; }
+    .bar-5 { animation: pulse-bar 0.8s ease-in-out 0.6s infinite; }
+    .progress-glow { background: linear-gradient(90deg, #3b82f6 25%, #60a5fa 50%, #3b82f6 75%); background-size: 200% 100%; animation: progress-glow 1.5s linear infinite; }
+    .ring-spin { animation: spin-slow 2s linear infinite; }
+    .grid-pattern { background-image: radial-gradient(circle, #e2e8f0 1px, transparent 1px); background-size: 24px 24px; }
+  </style>
+</head>
+<body class="min-h-screen text-gray-800 antialiased">
+
+  <!-- Nav -->
+  <header class="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
+        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      </div>
+      <span class="text-lg font-bold tracking-tight">ClipFetch</span>
+    </div>
+    <nav class="hidden sm:flex items-center gap-7 text-sm font-medium text-gray-500">
+      <a href="#" class="hover:text-gray-800 transition">Features</a>
+      <a href="#" class="hover:text-gray-800 transition">Formats</a>
+      <a href="#" class="hover:text-gray-800 transition">Pricing</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="max-w-4xl mx-auto px-6 pt-16 pb-12 text-center grid-pattern">
+    <div class="animate-fade-in">
+      <span class="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-semibold px-3.5 py-1.5 rounded-full border border-blue-200/50">Save any video — free</span>
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 mt-5 leading-tight">
+        Paste a link.<br/>Grab the video.
+      </h1>
+      <p class="text-gray-500 text-lg mt-4 max-w-lg mx-auto">YouTube, TikTok, Instagram, Twitter — one click downloads in the format you need.</p>
+    </div>
+
+    <!-- Input + CTA -->
+    <div class="mt-10 max-w-xl mx-auto animate-fade-in-delay">
+      <form id="download-form" class="flex items-center gap-2 bg-white border border-gray-200 rounded-xl pl-4 pr-2 py-1.5 shadow-sm hover:shadow-md transition-shadow">
+        <svg class="w-5 h-5 text-gray-400 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+        <input id="url-input" type="text" placeholder="Paste video link here…" class="w-full bg-transparent py-3 text-sm outline-none placeholder:text-gray-400" required />
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition whitespace-nowrap">Download</button>
+      </form>
+      <p class="text-xs text-gray-400 mt-3">Paste any public URL — supports 50+ platforms</p>
+    </div>
+
+    <!-- Download Status -->
+    <div id="status-container" class="mt-8 hidden animate-fade-in">
+      <div id="status-card" class="inline-flex items-center gap-6 bg-white border border-gray-100 rounded-2xl px-8 py-5 shadow-lg min-w-[360px]">
+        <div class="flex items-center gap-1 h-10" id="bars-container">
+          <div class="w-1.5 bg-blue-600 rounded-full bar-1"></div>
+          <div class="w-1.5 bg-blue-500 rounded-full bar-2"></div>
+          <div class="w-1.5 bg-blue-600 rounded-full bar-3"></div>
+          <div class="w-1.5 bg-blue-500 rounded-full bar-4"></div>
+          <div class="w-1.5 bg-blue-600 rounded-full bar-5"></div>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <div class="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+            <span id="status-title" class="font-medium text-gray-700">processing...</span>
+            <span id="status-pct" class="font-semibold text-blue-600">0%</span>
+          </div>
+          <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div id="status-bar" class="h-full w-0 rounded-full progress-glow" style="width:0%"></div>
+          </div>
+          <p id="status-text" class="text-[11px] text-gray-400 mt-1.5 text-left"></p>
+        </div>
+        <div id="spinner" class="w-9 h-9 border-[3px] border-gray-100 border-t-blue-600 rounded-full ring-spin shrink-0"></div>
+        <div id="done-icon" class="hidden w-9 h-9 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Cards -->
+  <section class="max-w-5xl mx-auto px-6 pb-16">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18"/><circle cx="12" cy="12" r="3"/><circle cx="16.5" cy="7.5" r="1.5"/></svg></div>
+        <h3 class="font-semibold text-gray-900 text-sm">MP4 · WebM · MOV</h3>
+        <p class="text-xs text-gray-500 mt-1">High-quality video in all major container formats.</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"/></svg></div>
+        <h3 class="font-semibold text-gray-900 text-sm">MP3 · FLAC · WAV</h3>
+        <p class="text-xs text-gray-500 mt-1">Extract lossless audio from any video source.</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4m16-8v4M5 7v4m7-8v12m-4-4h8"/></svg></div>
+        <h3 class="font-semibold text-gray-900 text-sm">4K · 1080p · 720p</h3>
+        <p class="text-xs text-gray-500 mt-1">Choose resolution up to Ultra HD.</p>
+      </div>
+      <div class="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-md transition-shadow">
+        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center mb-3"><svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+        <h3 class="font-semibold text-gray-900 text-sm">Subtitles · Thumbnails</h3>
+        <p class="text-xs text-gray-500 mt-1">Closed captions and cover art included.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Integration Logos -->
+  <section class="max-w-4xl mx-auto px-6 pb-20 text-center">
+    <p class="text-xs font-medium text-gray-400 uppercase tracking-widest mb-6">Works with</p>
+    <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-5">
+      <div class="flex items-center gap-2 text-gray-400"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg><span class="text-sm font-medium">YouTube</span></div>
+      <div class="flex items-center gap-2 text-gray-400"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M12 6.5a2.5 2.5 0 0 1 5 0v1a.5.5 0 0 1-1 0v-1a1.5 1.5 0 1 0-3 0v1a.5.5 0 0 1-1 0v-1A2.5 2.5 0 0 1 12 6.5zM7.5 10a.5.5 0 0 0-.5.5v3a5 5 0 0 0 10 0v-3a.5.5 0 0 0-.5-.5h-9z"/></svg><span class="text-sm font-medium">TikTok</span></div>
+      <div class="flex items-center gap-2 text-gray-400"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg><span class="text-sm font-medium">Instagram</span></div>
+      <div class="flex items-center gap-2 text-gray-400"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span class="text-sm font-medium">X (Twitter)</span></div>
+      <div class="flex items-center gap-2 text-gray-400"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M7.5 4.5A4.5 4.5 0 0 1 12 0h0a4.5 4.5 0 0 1 4.5 4.5H15a3 3 0 0 0-3-3h0a3 3 0 0 0-3 3H7.5z"/><path d="M3 6h18v1.5H3V6zm1.5 3H6v10.5H4.5V9zm3 0h1.5v10.5H7.5V9zm3 0H12v10.5h-1.5V9zm3 0h1.5v10.5H13.5V9zm3 0H18v10.5h-1.5V9zM3 19.5h18V21H3v-1.5z"/></svg><span class="text-sm font-medium">Facebook</span></div>
+    </div>
+  </section>
+
+  <!-- Footer CTA -->
+  <section class="max-w-3xl mx-auto px-6 pb-20 text-center">
+    <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl px-8 py-12 shadow-xl">
+      <h2 class="text-2xl sm:text-3xl font-bold text-white">Ready to download?</h2>
+      <p class="text-blue-100 mt-2 text-sm">Paste a link above and grab your video in seconds.</p>
+      <a href="#" class="inline-flex items-center gap-2 mt-6 bg-white text-blue-700 font-semibold px-6 py-3 rounded-xl hover:bg-blue-50 transition shadow-lg text-sm">Download Free</a>
+    </div>
+  </section>
+
+  <footer class="text-center pb-8 text-xs text-gray-400">&copy; 2026 ClipFetch. No sign-up required.</footer>
+
+  <script>
+    const form = document.getElementById('download-form');
+    const input = document.getElementById('url-input');
+    const container = document.getElementById('status-container');
+    const statusTitle = document.getElementById('status-title');
+    const statusPct = document.getElementById('status-pct');
+    const statusBar = document.getElementById('status-bar');
+    const statusText = document.getElementById('status-text');
+    const spinner = document.getElementById('spinner');
+    const doneIcon = document.getElementById('done-icon');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = input.value.trim();
+      if (!url) return;
+
+      container.classList.remove('hidden');
+      spinner.classList.remove('hidden');
+      doneIcon.classList.add('hidden');
+      statusTitle.textContent = 'Connecting...';
+      statusPct.textContent = '0%';
+      statusBar.style.width = '0%';
+      statusText.textContent = '';
+
+      try {
+        const res = await fetch('/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await res.json();
+        const taskId = data.task_id;
+
+        statusTitle.textContent = 'Fetching info...';
+        statusText.textContent = 'Extracting video information';
+
+        const ws = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws/progress/${taskId}`);
+
+        ws.onmessage = (msg) => {
+          const d = JSON.parse(msg.data);
+          if (d.type === 'pong') return;
+          const pct = Math.round(d.progress);
+          statusPct.textContent = pct + '%';
+          statusBar.style.width = pct + '%';
+          if (d.text) statusText.textContent = d.text;
+          if (d.text && d.text !== '') statusTitle.textContent = d.text;
+        };
+
+        // Poll for completion
+        const poll = setInterval(async () => {
+          const r = await fetch(`/api/tasks/${taskId}`);
+          const task = await r.json();
+          if (task.state === 'completed') {
+            clearInterval(poll);
+            ws.close();
+            statusPct.textContent = '100%';
+            statusBar.style.width = '100%';
+            statusText.textContent = 'Download complete!';
+            statusTitle.textContent = task.title || 'Completed';
+            spinner.classList.add('hidden');
+            doneIcon.classList.remove('hidden');
+          } else if (task.state === 'error') {
+            clearInterval(poll);
+            ws.close();
+            statusText.textContent = 'Error: ' + (task.error_message || 'Download failed');
+            statusTitle.textContent = 'Failed';
+            spinner.classList.add('hidden');
+          }
+        }, 1500);
+
+        // Give up after 10 min
+        setTimeout(() => { clearInterval(poll); ws.close(); }, 600000);
+      } catch (err) {
+        statusTitle.textContent = 'Connection error';
+        statusText.textContent = err.message;
+        spinner.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
