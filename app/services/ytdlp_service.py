@@ -24,9 +24,18 @@ FFMPEG_LOCATION = os.environ.get("FFMPEG_LOCATION", "")
 def init_cookies():
     content = os.environ.get("COOKIES_CONTENT", "")
     if content:
+        clean = []
+        for line in content.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith("#"):
+                clean.append(line)
+            elif "\t" in line and len(line.split("\t")) >= 6:
+                clean.append(line)
         with open(COOKIES_FILE, "w") as f:
-            f.write(content.replace("\\n", "\n"))
-        logger.info("Injected cookies from COOKIES_CONTENT env var (%d bytes)", len(content))
+            f.write("\n".join(clean))
+        logger.info("Injected cookies from COOKIES_CONTENT (%d raw -> %d clean bytes)", len(content), len("\n".join(clean)))
     elif os.path.exists(COOKIES_FILE):
         logger.info("Cookies file already exists at %s", COOKIES_FILE)
 
