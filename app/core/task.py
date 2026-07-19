@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import time
-from enum import IntEnum
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, Field
