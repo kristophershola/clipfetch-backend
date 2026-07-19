@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
+import subprocess
 from pathlib import Path
 from typing import Callable
 
@@ -60,40 +62,39 @@ def read_cookies() -> str:
     return ""
 
 
-def _build_info_opts() -> dict:
-    opts: dict = {
-        "quiet": True,
-        "no_warnings": True,
-        "no_playlist": True,
-        "socket_timeout": 30,
-    }
-    _apply_cookies(opts)
-    return opts
+def _ytdlp_cmd(extra: list[str] | None = None) -> list[str]:
+    cmd = ["yt-dlp", "--socket-timeout", "30", "--retries", "3"]
+    if os.path.exists(COOKIES_FILE):
+        cmd += ["--cookies", COOKIES_FILE]
+    if extra:
+        cmd += extra
+    return cmd
 
 
 def fetch_video_info(url: str) -> dict:
-    """Mirrors DownloadUtil.fetchVideoInfoFromUrl"""
-    opts = _build_info_opts()
-    with YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        if info is None:
-            raise ValueError(f"Could not extract info for {url}")
-        if info.get("_type") == "playlist":
-            entries = info.get("entries", [])
-            if entries:
-                return entries[0]
-        return info
+    """Mirrors DownloadUtil.fetchVideoInfoFromUrl via subprocess (like Seal's YoutubeDLRequest)"""
+    cmd = _ytdlp_cmd(["--dump-json", "--no-playlist", url])
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    if result.returncode != 0:
+        raise ValueError(result.stderr.strip() or f"yt-dlp failed with code {result.returncode}")
+    lines = result.stdout.strip().split("\n")
+    info = json.loads(lines[0])
+    if info.get("_type") == "playlist":
+        entries = info.get("entries", [])
+        if entries:
+            return entries[0]
+    return info
 
 
 def fetch_playlist_info(url: str) -> dict:
-    """Mirrors DownloadUtil.getPlaylistOrVideoInfo"""
-    opts = _build_info_opts()
-    opts["extract_flat"] = True
-    with YoutubeDL(opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        if info is None:
-            raise ValueError(f"Could not extract playlist info for {url}")
-        return info
+    """Mirrors DownloadUtil.getPlaylistOrVideoInfo via subprocess"""
+    cmd = _ytdlp_cmd(["--flat-playlist", "--dump-json", "--no-playlist", url])
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+    if result.returncode != 0:
+        raise ValueError(result.stderr.strip() or f"yt-dlp failed with code {result.returncode}")
+    lines = result.stdout.strip().split("\n")
+    info = json.loads(lines[0])
+    return info
 
 
 def info_to_view_state(info: dict) -> ViewState:
