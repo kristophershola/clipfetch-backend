@@ -95,7 +95,7 @@
           <p id="status-text" class="text-[11px] text-gray-400 mt-1.5 text-left"></p>
         </div>
         <div id="spinner" class="w-9 h-9 border-[3px] border-gray-100 border-t-blue-600 rounded-full ring-spin shrink-0"></div>
-        <div id="done-icon" class="hidden w-9 h-9 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+          <div id="done-icon" class="hidden w-9 h-9 bg-green-100 rounded-full flex items-center justify-center shrink-0 cursor-pointer" onclick="reDownload()" title="Save to device">
           <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
         </div>
       </div>
@@ -207,6 +207,17 @@
     const statusText = document.getElementById('status-text');
     const spinner = document.getElementById('spinner');
     const doneIcon = document.getElementById('done-icon');
+    let currentTaskId = null;
+    function reDownload() {
+      if (currentTaskId) {
+        const a = document.createElement('a');
+        a.href = '/api/tasks/' + currentTaskId + '/file';
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -229,6 +240,7 @@
         });
         const data = await res.json();
         const taskId = data.task_id;
+        currentTaskId = taskId;
 
         statusTitle.textContent = 'Fetching info...';
         statusText.textContent = 'Extracting video information';
@@ -258,6 +270,13 @@
             statusTitle.textContent = task.title || 'Completed';
             spinner.classList.add('hidden');
             doneIcon.classList.remove('hidden');
+            // auto-download the file to the user's device
+            const a = document.createElement('a');
+            a.href = '/api/tasks/' + taskId + '/file';
+            a.download = '';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
           } else if (task.state === 'error') {
             clearInterval(poll);
             ws.close();

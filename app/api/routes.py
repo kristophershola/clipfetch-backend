@@ -3,7 +3,10 @@ from __future__ import annotations
 import asyncio
 import logging
 
+import os
+
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.models.database import (
@@ -116,6 +119,18 @@ def restart_task_endpoint(task_id: str):
     if restart_task(task_id):
         return {"status": "restarted"}
     raise HTTPException(status_code=404, detail="Task not found or cannot be restarted")
+
+
+@router.get("/api/tasks/{task_id}/file")
+def download_task_file(task_id: str):
+    task = get_task(task_id)
+    if not task or not task.state.file_path:
+        raise HTTPException(status_code=404, detail="File not found")
+    fp = task.state.file_path
+    if not os.path.exists(fp):
+        raise HTTPException(status_code=404, detail="File no longer exists on server")
+    filename = os.path.basename(fp)
+    return FileResponse(fp, media_type="application/octet-stream", filename=filename)
 
 
 @router.delete("/api/tasks/{task_id}")
