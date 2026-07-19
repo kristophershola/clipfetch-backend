@@ -35,7 +35,8 @@ def init_cookies():
                 clean.append(line)
         with open(COOKIES_FILE, "w") as f:
             f.write("\n".join(clean))
-        logger.info("Injected cookies from COOKIES_CONTENT (%d raw -> %d clean bytes)", len(content), len("\n".join(clean)))
+        written = "\n".join(clean)
+        logger.info("Injected cookies from COOKIES_CONTENT (%d raw -> %d clean bytes)", len(content), len(written))
     elif os.path.exists(COOKIES_FILE):
         logger.info("Cookies file already exists at %s", COOKIES_FILE)
 
@@ -43,7 +44,6 @@ def init_cookies():
 def _apply_cookies(opts: dict) -> dict:
     if os.path.exists(COOKIES_FILE):
         opts["cookiefile"] = COOKIES_FILE
-        logger.info("Using cookies from %s", COOKIES_FILE)
     return opts
 
 
@@ -66,16 +66,18 @@ def _build_base_opts() -> dict:
         "no_warnings": True,
         "ignoreerrors": True,
         "extract_flat": False,
+        "socket_timeout": 15,
+        "retries": 3,
     }
     _apply_cookies(opts)
     return opts
 
 
 def fetch_video_info(url: str) -> dict:
+    """Mirrors DownloadUtil.fetchVideoInfoFromUrl"""
     opts = _build_base_opts()
     opts.update({
         "no_playlist": True,
-        "dump_single_json": True,
     })
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
@@ -85,10 +87,10 @@ def fetch_video_info(url: str) -> dict:
 
 
 def fetch_playlist_info(url: str) -> dict:
+    """Mirrors DownloadUtil.getPlaylistOrVideoInfo"""
     opts = _build_base_opts()
     opts.update({
         "extract_flat": True,
-        "dump_single_json": True,
         "skip_download": True,
     })
     with YoutubeDL(opts) as ydl:
@@ -171,6 +173,8 @@ def download_video(
         "no_warnings": True,
         "ignoreerrors": True,
         "restrictfilenames": prefs.get("restrict_filenames", False),
+        "socket_timeout": 15,
+        "retries": 3,
     }
     _apply_cookies(opts)
 
