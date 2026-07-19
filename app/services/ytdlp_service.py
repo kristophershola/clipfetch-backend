@@ -21,6 +21,16 @@ COOKIES_FILE = os.environ.get("COOKIES_FILE", "") or os.path.join(DATA_DIR, "coo
 FFMPEG_LOCATION = os.environ.get("FFMPEG_LOCATION", "")
 
 
+def init_cookies():
+    content = os.environ.get("COOKIES_CONTENT", "")
+    if content:
+        with open(COOKIES_FILE, "w") as f:
+            f.write(content.replace("\\n", "\n"))
+        logger.info("Injected cookies from COOKIES_CONTENT env var (%d bytes)", len(content))
+    elif os.path.exists(COOKIES_FILE):
+        logger.info("Cookies file already exists at %s", COOKIES_FILE)
+
+
 def _apply_cookies(opts: dict) -> dict:
     if os.path.exists(COOKIES_FILE):
         opts["cookiefile"] = COOKIES_FILE

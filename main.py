@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 
 from app.api.routes import router
 from app.models.database import init_db
+from app.services.ytdlp_service import init_cookies
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,6 +24,7 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    init_cookies()
     yield
 
 
