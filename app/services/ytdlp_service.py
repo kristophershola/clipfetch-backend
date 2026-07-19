@@ -60,14 +60,12 @@ def read_cookies() -> str:
     return ""
 
 
-def _build_base_opts() -> dict:
+def _build_info_opts() -> dict:
     opts: dict = {
         "quiet": True,
         "no_warnings": True,
-        "ignoreerrors": True,
-        "extract_flat": False,
-        "socket_timeout": 15,
-        "retries": 3,
+        "no_playlist": True,
+        "socket_timeout": 30,
     }
     _apply_cookies(opts)
     return opts
@@ -75,24 +73,22 @@ def _build_base_opts() -> dict:
 
 def fetch_video_info(url: str) -> dict:
     """Mirrors DownloadUtil.fetchVideoInfoFromUrl"""
-    opts = _build_base_opts()
-    opts.update({
-        "no_playlist": True,
-    })
+    opts = _build_info_opts()
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
         if info is None:
             raise ValueError(f"Could not extract info for {url}")
+        if info.get("_type") == "playlist":
+            entries = info.get("entries", [])
+            if entries:
+                return entries[0]
         return info
 
 
 def fetch_playlist_info(url: str) -> dict:
     """Mirrors DownloadUtil.getPlaylistOrVideoInfo"""
-    opts = _build_base_opts()
-    opts.update({
-        "extract_flat": True,
-        "skip_download": True,
-    })
+    opts = _build_info_opts()
+    opts["extract_flat"] = True
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=False)
         if info is None:
