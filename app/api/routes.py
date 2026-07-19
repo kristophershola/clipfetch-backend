@@ -21,7 +21,13 @@ from app.services.downloader import (
     subscribe_progress,
     unsubscribe_progress,
 )
-from app.services.ytdlp_service import fetch_playlist_info, get_available_formats, info_to_view_state
+from app.services.ytdlp_service import (
+    fetch_playlist_info,
+    get_available_formats,
+    info_to_view_state,
+    read_cookies,
+    save_cookies,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -191,6 +197,18 @@ def get_history(limit: int = 50):
         }
     finally:
         db.close()
+
+
+@router.get("/api/cookies")
+def get_cookies():
+    return {"cookies": read_cookies()}
+
+
+@router.put("/api/cookies")
+def update_cookies(body: dict):
+    content = body.get("cookies", "")
+    path = save_cookies(content)
+    return {"status": "saved", "path": path, "size": len(content)}
 
 
 @router.websocket("/ws/progress/{task_id}")

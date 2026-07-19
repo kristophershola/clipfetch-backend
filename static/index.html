@@ -149,7 +149,53 @@
     </div>
   </section>
 
-  <footer class="text-center pb-8 text-xs text-gray-400">&copy; 2026 ClipFetch. No sign-up required.</footer>
+  <!-- Cookies Modal -->
+  <div id="cookies-modal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4" style="display:none">
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-gray-900">YouTube Cookies</h3>
+        <button onclick="toggleCookies()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">Export cookies from <a class="text-blue-600 underline" href="https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp" target="_blank">your browser</a> as Netscape format and paste below. This persists across restarts.</p>
+      <textarea id="cookies-textarea" rows="8" class="w-full border border-gray-200 rounded-lg p-3 text-xs font-mono outline-none resize-y"></textarea>
+      <div class="flex gap-2 mt-3 justify-end">
+        <button onclick="toggleCookies()" class="text-sm text-gray-500 px-4 py-2 rounded-lg hover:bg-gray-50 transition">Cancel</button>
+        <button onclick="saveCookies()" class="bg-blue-600 text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-blue-700 transition">Save Cookies</button>
+      </div>
+      <p id="cookie-status" class="text-xs text-green-600 mt-2 hidden"></p>
+    </div>
+  </div>
+
+  <footer class="text-center pb-8 text-xs text-gray-400">
+    &copy; 2026 ClipFetch. No sign-up required. &mdash;
+    <button onclick="toggleCookies()" class="text-blue-600 hover:underline cursor-pointer">Set YouTube Cookies</button>
+  </footer>
+
+  <script>
+    async function toggleCookies() {
+      const el = document.getElementById('cookies-modal');
+      const isHidden = el.style.display === 'none';
+      el.style.display = isHidden ? 'flex' : 'none';
+      if (isHidden) {
+        const r = await fetch('/api/cookies');
+        const d = await r.json();
+        document.getElementById('cookies-textarea').value = d.cookies;
+      }
+    }
+    async function saveCookies() {
+      const content = document.getElementById('cookies-textarea').value;
+      const r = await fetch('/api/cookies', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookies: content }),
+      });
+      const d = await r.json();
+      const s = document.getElementById('cookie-status');
+      s.textContent = 'Saved (' + d.size + ' bytes)';
+      s.className = 'text-xs text-green-600 mt-2';
+      s.classList.remove('hidden');
+    }
+  </script>
 
   <script>
     const form = document.getElementById('download-form');

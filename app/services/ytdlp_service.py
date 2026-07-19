@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-import json
 import logging
 import os
-import re
-import subprocess
-import tempfile
-import threading
 from pathlib import Path
 from typing import Callable
 
@@ -16,28 +11,48 @@ from app.core.task import FormatInfo, ViewState
 
 logger = logging.getLogger(__name__)
 
-DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "downloads")
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+DOWNLOAD_DIR = os.path.join(BASE_DIR, "downloads")
+DATA_DIR = os.path.join(BASE_DIR, "data")
 os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
 
-_progress_map: dict[str, dict] = {}
-
+COOKIES_FILE = os.environ.get("COOKIES_FILE", "") or os.path.join(DATA_DIR, "cookies.txt")
 FFMPEG_LOCATION = os.environ.get("FFMPEG_LOCATION", "")
 
 
-def _build_base_opts(extra_headers: dict | None = None) -> dict:
+def _apply_cookies(opts: dict) -> dict:
+    if os.path.exists(COOKIES_FILE):
+        opts["cookiefile"] = COOKIES_FILE
+        logger.info("Using cookies from %s", COOKIES_FILE)
+    return opts
+
+
+def save_cookies(content: str) -> str:
+    with open(COOKIES_FILE, "w") as f:
+        f.write(content)
+    return COOKIES_FILE
+
+
+def read_cookies() -> str:
+    if os.path.exists(COOKIES_FILE):
+        with open(COOKIES_FILE) as f:
+            return f.read()
+    return ""
+
+
+def _build_base_opts() -> dict:
     opts: dict = {
         "quiet": True,
         "no_warnings": True,
         "ignoreerrors": True,
         "extract_flat": False,
     }
-    if extra_headers:
-        opts["http_headers"] = extra_headers
+    _apply_cookies(opts)
     return opts
 
 
 def fetch_video_info(url: str) -> dict:
-    """Mirrors DownloadUtil.fetchVideoInfoFromUrl"""
     opts = _build_base_opts()
     opts.update({
         "no_playlist": True,
@@ -51,7 +66,6 @@ def fetch_video_info(url: str) -> dict:
 
 
 def fetch_playlist_info(url: str) -> dict:
-    """Mirrors DownloadUtil.getPlaylistOrVideoInfo"""
     opts = _build_base_opts()
     opts.update({
         "extract_flat": True,
@@ -66,7 +80,6 @@ def fetch_playlist_info(url: str) -> dict:
 
 
 def info_to_view_state(info: dict) -> ViewState:
-    """Mirrors Task.ViewState.fromVideoInfo"""
     formats = info.get("requested_formats") or info.get("formats") or []
     video_formats = []
     audio_only_formats = []
@@ -115,7 +128,6 @@ def download_video(
     preferences: dict | None = None,
     progress_callback: Callable | None = None,
 ) -> list[str]:
-    """Mirrors DownloadUtil.downloadVideo"""
     prefs = preferences or {}
 
     def progress_hook(d: dict):
@@ -141,6 +153,7 @@ def download_video(
         "ignoreerrors": True,
         "restrictfilenames": prefs.get("restrict_filenames", False),
     }
+    _apply_cookies(opts)
 
     if FFMPEG_LOCATION:
         opts["ffmpeg_location"] = FFMPEG_LOCATION
@@ -150,19 +163,13 @@ def download_video(
 
     if extract_audio:
         opts["extract_audio"] = True
-        af = prefs.get("audio_format", "mp3")
-        opts["audio_format"] = af
+        opts["audio_format"] = prefs.get("audio_format", "mp3")
         opts["audio_quality"] = prefs.get("audio_quality", 5)
     elif format_id:
         opts["format"] = format_id
 
     if prefs.get("proxy"):
         opts["proxy"] = prefs.get("proxy_url", "")
-
-    if prefs.get("cookies"):
-        cookies_file = prefs.get("cookies_file", "")
-        if cookies_file and os.path.exists(cookies_file):
-            opts["cookiefile"] = cookies_file
 
     if prefs.get("embed_thumbnail"):
         opts["embedthumbnail"] = True
@@ -212,7 +219,6 @@ def download_video(
 
 
 def get_available_formats(url: str) -> list[dict]:
-    """Fetch available formats for a URL without downloading"""
     info = fetch_video_info(url)
     formats = info.get("formats", [])
     result = []
