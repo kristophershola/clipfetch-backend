@@ -28,30 +28,10 @@ _EXTRACTOR_ARGS = "youtube:player_client=android;player_skip=webpage"
 
 
 def init_cookies():
-    content = os.environ.get("COOKIES_CONTENT", "")
-    if content:
-        clean = []
-        for line in content.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith("#"):
-                clean.append(line)
-            elif "\t" in line and len(line.split("\t")) >= 6:
-                clean.append(line)
-        with open(COOKIES_FILE, "w") as f:
-            f.write("\n".join(clean))
-        written = "\n".join(clean)
-        logger.info("Injected cookies from COOKIES_CONTENT (%d raw -> %d clean bytes)", len(content), len(written))
-    elif os.path.exists(COOKIES_FILE):
-        os.remove(COOKIES_FILE)
-        logger.info("Removed stale cookies file")
-
-
-def _apply_cookies(opts: dict) -> dict:
+    # Android client doesn't support cookies — no longer needed
     if os.path.exists(COOKIES_FILE):
-        opts["cookiefile"] = COOKIES_FILE
-    return opts
+        os.remove(COOKIES_FILE)
+        logger.info("Removed cookies file (android client doesn't use them)")
 
 
 def save_cookies(content: str) -> str:
@@ -68,9 +48,8 @@ def read_cookies() -> str:
 
 
 def _ytdlp_cmd(extra: list[str] | None = None) -> list[str]:
+    # Android client doesn't support cookies — skip them entirely
     cmd = ["yt-dlp", "--socket-timeout", "30", "--retries", "3"]
-    if os.path.exists(COOKIES_FILE):
-        cmd += ["--cookies", COOKIES_FILE]
     cmd += ["--extractor-args", _EXTRACTOR_ARGS, "--js-runtime", JS_RUNTIME]
     if extra:
         cmd += extra
@@ -181,7 +160,6 @@ def download_video(
         "extractor_args": {"youtube": {"player_client": ["android"], "player_skip": ["webpage"]}},
         "js_runtime": JS_RUNTIME,
     }
-    _apply_cookies(opts)
 
     if FFMPEG_LOCATION:
         opts["ffmpeg_location"] = FFMPEG_LOCATION
